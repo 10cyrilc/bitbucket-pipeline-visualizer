@@ -19,7 +19,7 @@ jobs:
           node-version: 22
 
       - name: Install pnpm
-        run: npm install -g pnpm
+        run: corepack enable pnpm
 
       - name: Install dependencies
         run: pnpm install
@@ -28,7 +28,7 @@ jobs:
         run: pnpm run build
 
       - name: Install Surge
-        run: pnpm install -g surge
+        run: npm install -g surge
 
       - name: Deploy to Surge
         run: surge ./dist bitbucket-pipleines.surge.sh --token ${{ secrets.SURGE_TOKEN }}
