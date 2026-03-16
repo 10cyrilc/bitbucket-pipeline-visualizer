@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 
 interface YamlEditorProps {
   value: string;
-  onChange: (value: string | undefined) => void;
+  onChange?: (_value: string | undefined) => void;
   readOnly: boolean;
 }
 

@@ -1,4 +1,4 @@
-import type { ReactEnvironment, GlobalConfig } from '../../types';
+import type { ReactEnvironment, GlobalConfig, Environment } from '../../types';
 import type { Template } from '../types';
 import { getPmCommands, getCachePath } from '../utils';
 
@@ -9,7 +9,8 @@ export const ReactTemplateV1: Template = {
     version: '1.0.0',
     description: 'Standard React deployment to AWS S3 with CloudFront invalidation.',
   },
-  generate: (environments: ReactEnvironment[], config: GlobalConfig) => {
+  generate: (environments: Environment[], config: GlobalConfig) => {
+    const reactEnvs = environments as ReactEnvironment[];
     const pm = getPmCommands(config.packageManager);
     const cachePath = getCachePath(config.packageManager);
 
@@ -58,7 +59,7 @@ ${pm.install.map(cmd => `          - ${cmd}`).join('\n')}
               DISTRIBUTION_ID: $DISTRIBUTION_ID
 `;
 
-    environments.forEach((env) => {
+    reactEnvs.forEach((env) => {
       yaml += `
     - step: &build-${env.name.toLowerCase()}
         name: Build React (${env.name})
@@ -80,11 +81,11 @@ pipelines:
       - step: *quality-check
 `;
 
-    if (environments.length > 0) {
+    if (reactEnvs.length > 0) {
       yaml += `
   branches:
 `;
-      environments.forEach((env) => {
+      reactEnvs.forEach((env) => {
         yaml += `    ${env.branch}:
       - step: *build-${env.name.toLowerCase()}
       - step:
