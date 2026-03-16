@@ -5,9 +5,9 @@ import { templates } from '../templates';
 
 interface SidebarProps {
   projectType: ProjectType;
-  setProjectType: (type: ProjectType) => void;
+  setProjectType: (_type: ProjectType) => void;
   selectedTemplateId: string;
-  setSelectedTemplateId: (id: string) => void;
+  setSelectedTemplateId: (_id: string) => void;
   environments: Environment[];
   setEnvironments: React.Dispatch<React.SetStateAction<Environment[]>>;
   globalConfig: GlobalConfig;

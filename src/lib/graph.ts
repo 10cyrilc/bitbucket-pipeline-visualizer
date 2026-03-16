@@ -80,9 +80,16 @@ export const generateGraph = (projectType: ProjectType, environments: Environmen
   return { nodes, edges };
 };
 
+interface BitbucketPipelines {
+  pipelines?: {
+    'pull-requests'?: Record<string, Array<{ step?: { name?: string } }>>;
+    branches?: Record<string, Array<{ step?: { name?: string } }>>;
+  };
+}
+
 export const generateGraphFromYaml = (yamlString: string) => {
   try {
-    const doc = yaml.load(yamlString) as any;
+    const doc = yaml.load(yamlString) as BitbucketPipelines | null;
     if (!doc || typeof doc !== 'object' || !doc.pipelines) {
       return { nodes: [], edges: [] };
     }
@@ -93,8 +100,9 @@ export const generateGraphFromYaml = (yamlString: string) => {
     let startX = 100;
 
     // Parse PRs
-    if (doc.pipelines['pull-requests']) {
-      const prs = Object.keys(doc.pipelines['pull-requests']);
+    if (doc.pipelines?.['pull-requests']) {
+      const pullRequests = doc.pipelines['pull-requests'];
+      const prs = Object.keys(pullRequests);
       prs.forEach((prPattern) => {
         const prNodeId = `pr-${prPattern}`;
         nodes.push({
@@ -105,7 +113,7 @@ export const generateGraphFromYaml = (yamlString: string) => {
           style: { background: '#1e293b', border: '1px solid #334155', color: '#f8fafc', borderRadius: '8px', padding: '10px' },
         });
 
-        const steps = doc.pipelines['pull-requests'][prPattern];
+        const steps = pullRequests[prPattern];
         let prevNodeId = prNodeId;
         let yOffset = 150;
 
@@ -136,8 +144,9 @@ export const generateGraphFromYaml = (yamlString: string) => {
     }
 
     // Parse Branches
-    if (doc.pipelines.branches) {
-      const branches = Object.keys(doc.pipelines.branches);
+    if (doc.pipelines?.branches) {
+      const { branches: branchMap } = doc.pipelines;
+      const branches = Object.keys(branchMap);
       branches.forEach((branch) => {
         const branchNodeId = `branch-${branch}`;
         nodes.push({
@@ -148,7 +157,7 @@ export const generateGraphFromYaml = (yamlString: string) => {
           style: { background: '#1e293b', border: '1px solid #334155', color: '#f8fafc', borderRadius: '8px', padding: '10px' },
         });
 
-        const steps = doc.pipelines.branches[branch];
+        const steps = branchMap[branch];
         let prevNodeId = branchNodeId;
         let yOffset = 150;
 

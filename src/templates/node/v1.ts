@@ -1,4 +1,4 @@
-import type { NodeEnvironment, GlobalConfig } from '../../types';
+import type { NodeEnvironment, GlobalConfig, Environment } from '../../types';
 import type { Template } from '../types';
 import { getPmCommands, getCachePath } from '../utils';
 
@@ -9,7 +9,8 @@ export const NodeTemplateV1: Template = {
     version: '1.0.0',
     description: 'Build Docker image, push to ECR, and deploy via SSH.',
   },
-  generate: (environments: NodeEnvironment[], config: GlobalConfig) => {
+  generate: (environments: Environment[], config: GlobalConfig) => {
+    const nodeEnvs = environments as NodeEnvironment[];
     const pm = getPmCommands(config.packageManager);
     const cachePath = getCachePath(config.packageManager);
     const installSteps = [...pm.install];
@@ -60,7 +61,7 @@ ${installSteps.map(cmd => `          - ${cmd}`).join('\n')}
           - docker push $REPO:$IMAGE_TAG
 `;
 
-    environments.forEach((env) => {
+    nodeEnvs.forEach((env) => {
       yaml += `
     - step: &deploy-${env.name.toLowerCase()}
         name: 🚀 Deploy ${env.name}
@@ -151,11 +152,11 @@ pipelines:
       - step: *quality-check
 `;
 
-    if (environments.length > 0) {
+    if (nodeEnvs.length > 0) {
       yaml += `
   branches:
 `;
-      environments.forEach((env) => {
+      nodeEnvs.forEach((env) => {
         yaml += `    ${env.branch}:
       - step: *build
       - step: *deploy-${env.name.toLowerCase()}

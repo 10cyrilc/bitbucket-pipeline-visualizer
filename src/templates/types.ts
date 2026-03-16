@@ -1,4 +1,4 @@
-import type { GlobalConfig } from '../types';
+import type { GlobalConfig, Environment } from '../types';
 
 export interface TemplateMetadata {
   id: string;
@@ -9,5 +9,5 @@ export interface TemplateMetadata {
 
 export interface Template {
   metadata: TemplateMetadata;
-  generate: (environments: any[], config: GlobalConfig) => string;
+  generate: (_environments: Environment[], _config: GlobalConfig) => string;
 }
