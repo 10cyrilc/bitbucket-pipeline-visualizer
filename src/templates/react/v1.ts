@@ -13,7 +13,7 @@ export const ReactTemplateV1: Template = {
     const pm = getPmCommands(config.packageManager);
     const cachePath = getCachePath(config.packageManager);
 
-    let yaml = `image: node:${config.nodeVersion}
+    let yaml = `image: node:${config.nodeVersion || '22.16.0'}
 
 options:
   size: 2x
@@ -25,37 +25,29 @@ definitions:
   steps:
     - step: &quality-check
         name: Quality Check
-        image: node:${config.nodeVersion}-alpine
+        image: node:${config.nodeVersion || '20'}-alpine
         caches:
           - ${config.packageManager}
         script:
+          - set -e
 ${pm.install.map(cmd => `          - ${cmd}`).join('\n')}
-          - ${pm.run} format:check
-          - ${pm.run} lint
-          - ${pm.run} build --mode production
-`;
+          - ${pm.run} format:check & PID1=$!
+          - ${pm.run} lint & PID2=$!
+          - ${pm.run} build --mode production & PID3=$!
+          - wait $PID1
+          - wait $PID2
+          - wait $PID3
+          - ${pm.audit}
 
-    environments.forEach((env) => {
-      yaml += `
-    - step: &build-${env.name}
-        name: Build React (${env.name})
-        caches:
-          - ${config.packageManager}
-        script:
-${pm.install.map(cmd => `          - ${cmd}`).join('\n')}
-          - ${pm.run} build --mode ${env.name}
-        artifacts:
-          - dist/**
-
-    - step: &deploy-${env.name}
-        name: Deploy React (${env.name})
+    - step: &deploy
+        name: 🚀 Deploy
         script:
           - pipe: atlassian/aws-s3-deploy:2.0.1
             variables:
               AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
               AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
               AWS_DEFAULT_REGION: ap-south-1
-              S3_BUCKET: ${env.s3Bucket}
+              S3_BUCKET: $S3_BUCKET
               LOCAL_PATH: dist
 
           - pipe: atlassian/aws-cloudfront-invalidate:0.11.0
@@ -63,23 +55,41 @@ ${pm.install.map(cmd => `          - ${cmd}`).join('\n')}
               AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
               AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
               AWS_DEFAULT_REGION: ap-south-1
-              DISTRIBUTION_ID: ${env.distributionId}
+              DISTRIBUTION_ID: $DISTRIBUTION_ID
+`;
+
+    environments.forEach((env) => {
+      yaml += `
+    - step: &build-${env.name.toLowerCase()}
+        name: Build React (${env.name})
+        caches:
+          - ${config.packageManager}
+        script:
+          - set -e
+${pm.install.map(cmd => `          - ${cmd}`).join('\n')}
+          - ${pm.run} build --mode ${env.name.toLowerCase()}
+        artifacts:
+          - dist/**
 `;
     });
 
     yaml += `
 pipelines:
   pull-requests:
-    '**':
+    "**":
       - step: *quality-check
 `;
 
     if (environments.length > 0) {
-      yaml += `  branches:\n`;
+      yaml += `
+  branches:
+`;
       environments.forEach((env) => {
         yaml += `    ${env.branch}:
-      - step: *build-${env.name}
-      - step: *deploy-${env.name}
+      - step: *build-${env.name.toLowerCase()}
+      - step:
+          <<: *deploy
+          deployment: ${env.name}
 `;
       });
     }

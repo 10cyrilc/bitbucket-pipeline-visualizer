@@ -33,8 +33,6 @@ export function Sidebar({
         id,
         name: 'qa',
         branch: 'qa',
-        s3Bucket: 'my-bucket-qa',
-        distributionId: 'E1234567890',
       };
       setEnvironments([...environments, newEnv]);
     } else {
@@ -42,9 +40,13 @@ export function Sidebar({
         id,
         name: 'qa',
         branch: 'qa',
-        serverIp: '10.0.1.10',
-        containerName: 'api-qa',
+        serverIp: '$QA_SERVER_IP',
+        containerName: 'hrms-backend-qa',
         hostPort: '4020',
+        containerPort: '5000',
+        nodeEnv: 'qa',
+        sshUser: 'root',
+        sshKey: '$QA_SSH_KEY',
       };
       setEnvironments([...environments, newEnv]);
     }
@@ -143,6 +145,30 @@ export function Sidebar({
                 </div>
               )}
             </div>
+            {projectType === 'node' && (
+              <>
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">ECR Registry</label>
+                  <input
+                    type="text"
+                    value={globalConfig.ecrRegistry}
+                    onChange={(e) => setGlobalConfig({ ...globalConfig, ecrRegistry: e.target.value })}
+                    className="w-full text-sm border border-slate-800 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all bg-[#1a1a1a] text-slate-200"
+                    placeholder="e.g. 1234567890.dkr.ecr.us-east-1.amazonaws.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">ECR Repository</label>
+                  <input
+                    type="text"
+                    value={globalConfig.ecrRepository}
+                    onChange={(e) => setGlobalConfig({ ...globalConfig, ecrRepository: e.target.value })}
+                    className="w-full text-sm border border-slate-800 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all bg-[#1a1a1a] text-slate-200"
+                    placeholder="e.g. my-api-repo"
+                  />
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -220,36 +246,44 @@ export function Sidebar({
                   </div>
 
                   {projectType === 'react' ? (
-                    <>
-                      <div>
-                        <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">S3 Bucket</label>
-                        <input
-                          type="text"
-                          value={(env as ReactEnvironment).s3Bucket}
-                          onChange={(e) => updateEnvironment(env.id, 's3Bucket', e.target.value)}
-                          className="w-full text-sm border border-slate-800 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all bg-[#111111] text-slate-200"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">CloudFront Dist ID</label>
-                        <input
-                          type="text"
-                          value={(env as ReactEnvironment).distributionId}
-                          onChange={(e) => updateEnvironment(env.id, 'distributionId', e.target.value)}
-                          className="w-full text-sm border border-slate-800 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all bg-[#111111] text-slate-200"
-                        />
-                      </div>
-                    </>
+                    <div className="flex items-center justify-center p-4 border border-dashed border-slate-800 rounded-lg bg-slate-900/50">
+                      <p className="text-[10px] text-slate-500 uppercase tracking-wider text-center">
+                        Deployment secrets <span className="text-indigo-400 font-mono italic">($S3_BUCKET, $DISTRIBUTION_ID)</span> are managed via Bitbucket Deployment environments.
+                      </p>
+                    </div>
                   ) : (
                     <>
                       <div>
-                        <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">Server IP</label>
+                        <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">Server (Var or IP)</label>
                         <input
                           type="text"
                           value={(env as NodeEnvironment).serverIp}
                           onChange={(e) => updateEnvironment(env.id, 'serverIp', e.target.value)}
                           className="w-full text-sm border border-slate-800 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all bg-[#111111] text-slate-200"
+                          placeholder="e.g. $QA_SERVER_IP"
                         />
+                      </div>
+                      <div className="flex space-x-2">
+                        <div className="flex-1">
+                          <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">SSH User</label>
+                          <input
+                            type="text"
+                            value={(env as NodeEnvironment).sshUser}
+                            onChange={(e) => updateEnvironment(env.id, 'sshUser', e.target.value)}
+                            className="w-full text-sm border border-slate-800 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all bg-[#111111] text-slate-200"
+                            placeholder="e.g. root"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">SSH Key (Var)</label>
+                          <input
+                            type="text"
+                            value={(env as NodeEnvironment).sshKey}
+                            onChange={(e) => updateEnvironment(env.id, 'sshKey', e.target.value)}
+                            className="w-full text-sm border border-slate-800 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all bg-[#111111] text-slate-200"
+                            placeholder="e.g. $QA_SSH_KEY"
+                          />
+                        </div>
                       </div>
                       <div className="flex space-x-2">
                         <div className="flex-1">
@@ -262,7 +296,7 @@ export function Sidebar({
                           />
                         </div>
                         <div className="w-16">
-                          <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">Port</label>
+                          <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">Host Port</label>
                           <input
                             type="text"
                             value={(env as NodeEnvironment).hostPort}
@@ -270,6 +304,24 @@ export function Sidebar({
                             className="w-full text-sm border border-slate-800 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all bg-[#111111] text-slate-200"
                           />
                         </div>
+                        <div className="w-16">
+                          <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">Cont. Port</label>
+                          <input
+                            type="text"
+                            value={(env as NodeEnvironment).containerPort}
+                            onChange={(e) => updateEnvironment(env.id, 'containerPort', e.target.value)}
+                            className="w-full text-sm border border-slate-800 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all bg-[#111111] text-slate-200"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-slate-500 uppercase mb-1">Node Environment</label>
+                        <input
+                          type="text"
+                          value={(env as NodeEnvironment).nodeEnv}
+                          onChange={(e) => updateEnvironment(env.id, 'nodeEnv', e.target.value)}
+                          className="w-full text-sm border border-slate-800 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all bg-[#111111] text-slate-200"
+                        />
                       </div>
                     </>
                   )}
